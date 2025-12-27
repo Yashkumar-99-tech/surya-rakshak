@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> OUR TBDS - COMMAND CENTER </title>
+    <style>
+        :root {
+            --bg: #0b0e14;
+            --glass: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
+            --accent: #00d4ff;
+            --alert: #ff4757;
+            --success: #2ed573;
+            --warning: #ffa502;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: radial-gradient(circle at center, #1a1f2c 0%, #0b0e14 100%);
+            color: white; min-height: 100vh; margin: 0;
+            display: flex; flex-direction: column; align-items: center; padding: 20px;
+        }
+
+        #alertOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, rgba(255, 71, 87, 0.2) 0%, transparent 70%);
+            display: none; pointer-events: none; z-index: -1;
+        }
+        .alert-active #alertOverlay { display: block; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 0.3; } 50% { opacity: 1; } 100% { opacity: 0.3; } }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; width: 100%; max-width: 900px; }
+        
+        .card { background: var(--glass); backdrop-filter: blur(10px); border: 1px solid var(--border); border-radius: 20px; padding: 20px; text-align: center; transition: 0.3s; }
+        .status-bar { grid-column: 1 / -1; font-weight: bold; padding: 15px; border-radius: 10px; border: 1px solid var(--border); transition: background 0.5s; }
+        .alert-active #statusBox { background: var(--alert) !important; box-shadow: 0 0 20px var(--alert); border-color: transparent; }
+
+        .advice-section { 
+            grid-column: 1 / -1; 
+            text-align: left; 
+            background: rgba(0, 212, 255, 0.05); 
+            border-left: 4px solid var(--accent);
+        }
+        .advice-section h3 { margin-top: 0; color: var(--accent); display: flex; align-items: center; gap: 10px; }
+        .advice-list { margin: 0; padding-left: 20px; }
+        .advice-list li { margin-bottom: 10px; color: #e0e0e0; font-size: 0.95rem; }
+        .crit { color: var(--alert); font-weight: bold; }
+
+        #debugConsole {
+            grid-column: 1 / -1;
+            background: #000;
+            color: #0f0;
+            font-family: monospace;
+            font-size: 11px;
+            padding: 10px;
+            height: 40px;
+            overflow: hidden;
+            border-radius: 10px;
+            border: 1px solid #333;
+            margin-top: 10px;
+        }
+
+        .gauge-container { position: relative; width: 140px; height: 140px; margin: 10px auto; }
+        .gauge-svg { transform: rotate(-90deg); width: 140px; height: 140px; }
+        .gauge-bg { fill: none; stroke: #222; stroke-width: 10; }
+        .gauge-cap { fill: none; stroke-width: 10; stroke-linecap: round; transition: 0.5s; }
+        .gauge-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.5rem; font-weight: bold; }
+
+        .connect-btn { background: var(--accent); padding: 12px 25px; border-radius: 30px; font-weight: bold; margin-bottom: 20px; color: #000; border: none; cursor: pointer; transition: 0.3s; }
+        .connect-btn:hover { opacity: 0.8; transform: scale(1.05); }
+        .ctrl-btn { padding: 12px; border-radius: 10px; font-weight: bold; width: 45%; border: none; cursor: pointer; }
+        .btn-on { background: var(--success); color: black; } 
+        .btn-off { background: var(--alert); color: white; }
+    </style>
+</head>
+<body id="mainBody">
+    <div id="alertOverlay"></div>
+    <h1>COMMAND CENTER</h1>
+    <button id="btConnect" class="connect-btn">CONNECT HARDWARE</button>
+
+    <div class="grid">
+        <div class="card status-bar" id="statusBox">SYSTEM OFFLINE</div>
+
+        <div class="card advice-section" id="adviceCard">
+            <h3>💡 SYSTEM ADVICE</h3>
+            <ul class="advice-list" id="adviceList">
+                <li>Waiting for connection...</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <span>TEMPERATURE (°C)</span>
+            <div class="gauge-container">
+                <svg class="gauge-svg"><circle class="gauge-bg" cx="70" cy="70" r="60"></circle>
+                <circle id="tCircle" class="gauge-cap" cx="70" cy="70" r="60" style="stroke:#ff7f50; stroke-dasharray: 377; stroke-dashoffset: 377;"></circle></svg>
+                <div class="gauge-text" id="tVal">--</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <span>HUMIDITY (%)</span>
+            <div class="gauge-container">
+                <svg class="gauge-svg"><circle class="gauge-bg" cx="70" cy="70" r="60"></circle>
+                <circle id="hCircle" class="gauge-cap" cx="70" cy="70" r="60" style="stroke:#00d4ff; stroke-dasharray: 377; stroke-dashoffset: 377;"></circle></svg>
+                <div class="gauge-text" id="hVal">--</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <span>UV INDEX</span>
+            <div class="gauge-container">
+                <svg class="gauge-svg"><circle class="gauge-bg" cx="70" cy="70" r="60"></circle>
+                <circle id="uCircle" class="gauge-cap" cx="70" cy="70" r="60" style="stroke:#ffa502; stroke-dasharray: 377; stroke-dashoffset: 377;"></circle></svg>
+                <div class="gauge-text" id="uVal">--</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <span>MANUAL OVERRIDE</span>
+            <div style="margin-top:20px; display:flex; justify-content: space-around;">
+                <button class="ctrl-btn btn-on" onclick="sendCmd('1')">ON</button>
+                <button class="ctrl-btn btn-off" onclick="sendCmd('0')">OFF</button>
+            </div>
+        </div>
+
+        <div id="debugConsole">Hardware data will appear here...</div>
+    </div>
+
+    <script>
+        let port;
+        let reader;
+        let inputStream;
+        const LIMITS = { temp: 40, hum: 60, uv: 6.0 };
+        let lastAlertState = false;
+
+        document.getElementById('btConnect').addEventListener('click', async () => {
+            if (port) {
+                location.reload(); // Quick reset if already clicked
+                return;
+            }
+            try {
+                port = await navigator.serial.requestPort();
+                await port.open({ baudRate: 9600 });
+                
+                document.getElementById('statusBox').innerText = "CONNECTED - RECEIVING DATA";
+                document.getElementById('statusBox').style.background = "var(--success)";
+                
+                readLoop();
+            } catch (err) {
+                console.error("Port Open Error:", err);
+                document.getElementById('statusBox').innerText = "ERROR: Close Serial Monitor & try again.";
+                document.getElementById('statusBox').style.background = "var(--alert)";
+            }
+        });
+
+        async function readLoop() {
+            const textDecoder = new TextDecoderStream();
+            inputStream = port.readable.pipeTo(textDecoder.writable);
+            reader = textDecoder.readable.getReader();
+            let buffer = "";
+
+            try {
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    
+                    buffer += value;
+                    // Look for Newline characters to define a full message
+                    let lines = buffer.split(/\r?\n/);
+                    buffer = lines.pop(); 
+                    
+                    for (let line of lines) {
+                        let trimmedLine = line.trim();
+                        if (trimmedLine) {
+                            document.getElementById('debugConsole').innerText = "RAW: " + trimmedLine;
+                            processHardwareData(trimmedLine);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Read Loop Error:", error);
+                document.getElementById('statusBox').innerText = "DISCONNECTED - Try reconnecting";
+                document.getElementById('statusBox').style.background = "var(--alert)";
+            } finally {
+                reader.releaseLock();
+            }
+        }
+
+        function processHardwareData(data) {
+            // Remove any corrupted or non-ASCII characters that Bluetooth often adds
+            let cleanData = data.replace(/[^\x20-\x7E]/g, '');
+            let p = cleanData.split(',');
+            
+            // Check if we have the right number of values (Temp, Hum, LED, Buz, UV)
+            if (p.length < 5) return; 
+
+            let temp = parseFloat(p[0]);
+            let hum  = parseFloat(p[1]);
+            let lightState = p[2] ? p[2].trim() : "OFF";
+            let buzState   = p[3] ? p[3].trim() : "OFF";
+            let uv         = parseFloat(p[4]);
+
+            // Update UI Gauges
+            updateGauge('tVal', 'tCircle', temp, 50);
+            updateGauge('hVal', 'hCircle', hum, 100);
+            updateGauge('uVal', 'uCircle', uv, 11);
+
+            // Alert Logic
+            let advice = [];
+            if (!isNaN(temp) && temp >= LIMITS.temp) advice.push(`<li class="crit">HIGH TEMP: ${temp.toFixed(1)}°C</li>`);
+            if (!isNaN(hum) && hum >= LIMITS.hum) advice.push(`<li class="crit">HIGH HUMIDITY: ${hum.toFixed(1)}%</li>`);
+            if (!isNaN(uv) && uv >= LIMITS.uv) advice.push(`<li class="crit">HIGH UV INDEX: ${uv.toFixed(1)}</li>`);
+
+            const statusBox = document.getElementById('statusBox');
+            const adviceList = document.getElementById('adviceList');
+
+            if (advice.length > 0) {
+                document.body.classList.add('alert-active');
+                statusBox.innerText = "⚠️ CRITICAL ALERT ⚠️";
+                adviceList.innerHTML = advice.join('');
+                if(!lastAlertState) { sendCmd('1'); lastAlertState = true; }
+            } else {
+                document.body.classList.remove('alert-active');
+                statusBox.innerText = "SYSTEM NORMAL | LED: " + lightState;
+                statusBox.style.background = "var(--success)";
+                adviceList.innerHTML = "<li>All parameters safe.</li>";
+                if(lastAlertState) { sendCmd('0'); lastAlertState = false; }
+            }
+        }
+
+        function updateGauge(valId, circleId, value, max) {
+            const textEl = document.getElementById(valId);
+            const circle = document.getElementById(circleId);
+            const circumference = 377;
+
+            if (isNaN(value)) {
+                textEl.innerText = "--";
+                circle.style.strokeDashoffset = circumference;
+                return;
+            }
+
+            textEl.innerText = (valId === 'uVal') ? value.toFixed(1) : Math.round(value);
+            const offset = circumference - (Math.min(Math.max(value, 0), max) / max) * circumference;
+            circle.style.strokeDashoffset = offset;
+        }
+
+        async function sendCmd(c) {
+            if (!port || !port.writable) return;
+            try {
+                const writer = port.writable.getWriter();
+                await writer.write(new TextEncoder().encode(c));
+                writer.releaseLock();
+            } catch (e) {
+                console.error("Command Send Failed:", e);
+            }
+        }
+    </script>
+</body>
+</html>
